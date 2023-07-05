@@ -1,0 +1,162 @@
+services:
+  base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: couchbase
+    image: bd_base
+    container_name: couchbase_base
+    profiles:
+      - base
+    volumes:
+      - ./entrypoint.sh:/config-entrypoint.sh
+    ulimits:
+      memlock: 
+        soft: 1000000
+        hard: 1000000
+
+  db_principal:
+    extends: base
+    container_name: db_principal
+    volumes:
+      - volume_principal:/opt/couchbase/var
+    ports:
+      - 8091:8091
+      - 9123:9123
+      - 11207:11207
+      - 11210:11210
+      - 11280:11280
+      - 18091-18097:18091-18097
+    profiles:
+      - dbs
+    networks:
+      rede_couchbase:
+        ipv4_address: 172.11.238.100
+    environment:
+      HOST: 172.11.238.100
+      USERNAME: ${DB_PRINCIPAL_USERNAME}
+      PASSWORD: ${DB_PRINCIPAL_PASSWORD}
+      XDCR_HOST: 172.11.238.102
+      XDCR_NAME: dbsecundario
+      XDCR_USERNAME: ${DB_SECUNDARIO_USERNAME}
+      XDCR_PASSWORD: ${DB_SECUNDARIO_PASSWORD}
+
+  db_principal_worker:
+    extends: base
+    container_name: db_principal_worker
+    volumes:
+      - volume_principal_worker:/opt/couchbase/var
+    depends_on:
+      - db_principal
+    ports:
+    - 8092:8091
+    profiles:
+      - dbs
+    networks:
+      rede_couchbase:
+        ipv4_address: 172.11.238.101
+    environment:
+      WORKER: 1
+      CLUSTER_HOST: 172.11.238.100
+      HOST: 172.11.238.101
+      USERNAME: ${DB_PRINCIPAL_USERNAME}
+      PASSWORD: ${DB_PRINCIPAL_PASSWORD}
+
+  db_secundario:
+    extends: base
+    container_name: db_secundario
+    volumes:
+      - volume_secundario:/opt/couchbase/var
+    ports:
+      - 8093:8091
+    profiles:
+      - dbs
+    depends_on:
+      - db_principal
+    networks:
+      rede_couchbase:
+        ipv4_address: 172.11.238.102
+    environment:
+      HOST: 172.11.238.102
+      USERNAME: ${DB_SECUNDARIO_USERNAME}
+      PASSWORD: ${DB_SECUNDARIO_PASSWORD}
+      XDCR_HOST: 172.11.238.100
+      XDCR_NAME: dbprincipal
+      XDCR_USERNAME: ${DB_PRINCIPAL_USERNAME}
+      XDCR_PASSWORD: ${DB_PRINCIPAL_PASSWORD}
+
+  db_secundario_worker:
+    extends: base
+    container_name: db_secundario_worker
+    volumes:
+      - volume_secundario_worker:/opt/couchbase/var
+    ports:
+      - 8094:8091
+    profiles:
+      - dbs
+    networks:
+      rede_couchbase:
+        ipv4_address: 172.11.238.103
+    environment:
+      WORKER: 1
+      CLUSTER_HOST: 172.11.238.102
+      HOST: 172.11.238.103
+      USERNAME: ${DB_SECUNDARIO_USERNAME}
+      PASSWORD: ${DB_SECUNDARIO_PASSWORD}
+
+  estaciufba:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: estaciufba
+    networks:
+        - rede_couchbase
+#    depends_on:
+#      - db_principal
+#      - db_principal_worker
+#      - db_secundario
+#      - db_secundario_worker
+    volumes:
+      - .:/estaciufba
+    profiles:
+      - estaciufba
+    environment:
+      DB_PRINCIPAL_USERNAME: ${DB_PRINCIPAL_USERNAME}
+      DB_PRINCIPAL_PASSWORD: ${DB_PRINCIPAL_PASSWORD}
+      DB_SECUNDARIO_USERNAME: ${DB_SECUNDARIO_USERNAME}
+      DB_SECUNDARIO_PASSWORD: ${DB_SECUNDARIO_PASSWORD}
+      DB_PRINCIPAL_HOST: db_principal
+      DB_PRINCIPAL_REPLICA_HOST: db_principal_worker
+      DB_SECUNDARIO_HOST: db_secundario
+      DB_SECUNDARIO_REPLICA_HOST: db_secundario_worker
+
+networks:
+  rede_couchbase:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.11.238.0/24
+          gateway: 172.11.238.1
+
+volumes:
+  volume_principal:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+  volume_principal_worker:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+  volume_secundario:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+  volume_secundario_worker:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs

@@ -1,4 +1,5 @@
 import couchbase
+from couchbase.management.logic.users_logic import Role, User
 from couchbase.management.logic.view_index_logic import DesignDocument, DesignDocumentNamespace, View
 from couchbase.management.options import CreatePrimaryQueryIndexOptions
 from couchbase.management.queries import CollectionQueryIndexManager
@@ -108,8 +109,36 @@ def criar_views():
         DesignDocumentNamespace.DEVELOPMENT
     )
 
+def criar_stored_procedures():
+    query = """
+            CREATE OR REPLACE FUNCTION qtd_vagas_no_estacionamento(estacionamentoId) { (
+                SELECT COUNT(*)
+                FROM vagas v
+                WHERE v.estacionamento_id = 'estacionamento::1' AND v.disponivel = true 
+            )}
+            """
+    db.scope.query(query)
+
+def criar_usuario_ocupar_vagas():
+    db.cluster.users().upsert_user(
+        User(
+            username="ocupar_vagas",
+            password="ocupar_vagas",
+            roles={
+                Role( name="query_select", bucket="estaciufba", scope="develop", collection="estacionamentos"),
+                Role( name="query_select", bucket="estaciufba", scope="develop", collection="vagas"),
+                Role( name="query_select", bucket="estaciufba", scope="develop", collection="vagas_acessos"),
+                Role( name="query_insert", bucket="estaciufba", scope="develop", collection="vagas_acessos"),
+                Role( name="query_update", bucket="estaciufba", scope="develop", collection="vagas"),
+            }
+        )
+    )
+
+
 
 if __name__ == "__main__":
     inserir_dados()
     criar_indice()
     criar_views()
+    criar_stored_procedures()
+    criar_usuario_ocupar_vagas()

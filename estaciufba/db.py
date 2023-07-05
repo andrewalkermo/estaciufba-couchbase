@@ -26,5 +26,52 @@ class Database:
             SELECT vagas.*
             FROM vagas
             WHERE estacionamento_id = $1 AND disponivel = true
-        """
+            """
         return self.scope.query(query, QueryOptions(positional_parameters=[estacionamento_id]))
+
+    def obter_vaga_livre(self, estacionamento_id: str):
+        query = """
+            SELECT vagas.*
+            FROM vagas
+            WHERE estacionamento_id = $1 AND disponivel = true
+            LIMIT 1
+            """
+        return self.scope.query(query, QueryOptions(positional_parameters=[estacionamento_id]))
+    def ocupar_vaga_do_estacionamento(self, estacionamento_id: str, vaga_id: str):
+        query = """
+            UPDATE vagas
+            SET disponivel = false
+            WHERE estacionamento_id = $1 AND meta().id = $2
+            RETURNING *
+            """
+        return self.scope.query(query, QueryOptions(positional_parameters=[estacionamento_id, vaga_id]))
+
+    def registrar_acesso_vaga(self, vaga_id: str):
+        query = """
+            INSERT INTO vagas_acessos (KEY, VALUE)
+            VALUES (CONCAT("vaga_acesso::", UUID()), {
+                "vaga_id": $1,
+                "entrada": NOW_MS(),
+                "saida": null
+            })
+            """
+
+    def ocupar_vaga(self, vaga_id: str):
+        query = """
+            BEGIN WORK;
+            
+            UPDATE vagas
+            SET disponivel = false
+            WHERE meta().id = $1;
+            
+            INSERT INTO vagas_acessos (KEY, VALUE)
+            VALUES (CONCAT("vaga_acesso::", UUID()), {
+                "vaga_id": $1,
+                "entrada": NOW_MS(),
+                "saida": null
+            });
+            
+            COMMIT WORK;
+            """
+        return self.scope.query(query, QueryOptions(positional_parameters=[vaga_id]))
+

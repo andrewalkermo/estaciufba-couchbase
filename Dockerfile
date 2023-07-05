@@ -20,4 +20,4 @@ COPY . /estaciufba
 
 ENV PYTHONPATH="$PYTHONPATH:/estaciufba"
 
-CMD [ "poetry", "run", "python3", "./estaiufba/main.py" ]
+CMD [ "poetry", "run", "python3", "./estaciufba/main.py" ]

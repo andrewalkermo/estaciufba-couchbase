@@ -1,3 +1,5 @@
+import threading
+
 import couchbase
 from couchbase.collection import ReplaceOptions
 from couchbase.exceptions import CASMismatchException, DocumentExistsException
@@ -123,13 +125,15 @@ def criar_stored_procedures():
 
 def reservar_vaga(vaga_id):
     # get one where disponivel = true
-    vaga_disponivel = db.scope.collection("vagas").binary().get(vaga_id)
+    res = db.scope.collection("vagas").get(vaga_id)
+
+    vaga_disponivel = res.content_as[dict]
 
     # update disponivel = false
-    vaga_disponivel.content["disponivel"] = False
+    vaga_disponivel["disponivel"] = False
 
     try:
-        db.scope.collection("vagas").replace(vaga_id, vaga_disponivel, ReplaceOptions(cas=vaga_disponivel.cas))
+        db.scope.collection("vagas").replace(vaga_id, vaga_disponivel, ReplaceOptions(cas=res.cas))
     except (CASMismatchException, DocumentExistsException):
         raise Exception("Erro ao reservar vaga")
 
@@ -152,8 +156,16 @@ def criar_usuario_ocupar_vagas():
 
 
 if __name__ == "__main__":
-    inserir_dados()
-    criar_indice()
-    criar_views()
-    criar_stored_procedures()
-    criar_usuario_ocupar_vagas()
+    # inserir_dados()
+    # criar_indice()
+    # criar_views()
+    # criar_stored_procedures()
+    # criar_usuario_ocupar_vagas()
+
+    # run reservar_vaga in two threads
+    thread1 = threading.Thread(target=reservar_vaga, args=("vaga::1",))
+    thread2 = threading.Thread(target=reservar_vaga, args=("vaga::1",))
+
+    thread1.start()
+    thread2.start()
+

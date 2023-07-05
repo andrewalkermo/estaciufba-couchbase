@@ -1,4 +1,6 @@
 import couchbase
+from couchbase.collection import ReplaceOptions
+from couchbase.exceptions import CASMismatchException, DocumentExistsException
 from couchbase.management.logic.users_logic import Role, User
 from couchbase.management.logic.view_index_logic import DesignDocument, DesignDocumentNamespace, View
 from couchbase.management.options import CreatePrimaryQueryIndexOptions
@@ -118,6 +120,19 @@ def criar_stored_procedures():
             )}
             """
     db.scope.query(query)
+
+def reservar_vaga(vaga_id):
+    # get one where disponivel = true
+    vaga_disponivel = db.scope.collection("vagas").binary().get(vaga_id)
+
+    # update disponivel = false
+    vaga_disponivel.content["disponivel"] = False
+
+    try:
+        db.scope.collection("vagas").replace(vaga_id, vaga_disponivel, ReplaceOptions(cas=vaga_disponivel.cas))
+    except (CASMismatchException, DocumentExistsException):
+        raise Exception("Erro ao reservar vaga")
+
 
 def criar_usuario_ocupar_vagas():
     db.cluster.users().upsert_user(

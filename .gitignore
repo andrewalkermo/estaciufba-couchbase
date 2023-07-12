@@ -4,3 +4,6 @@
 
 ### Couchbase Plugin ###
 .cbcache/
+backups/
+database/
+schema/

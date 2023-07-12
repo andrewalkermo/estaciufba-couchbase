@@ -17,7 +17,7 @@ class Database:
             password,
         )
         self.cluster = Cluster('couchbase://db_principal', ClusterOptions(auth))
-        self.cluster.wait_until_ready(timedelta(seconds=5))
+        self.cluster.wait_until_ready(timedelta(seconds=30))
         self.cb = self.cluster.bucket(bucket_name)
         self.scope = self.cb.scope("develop")
 

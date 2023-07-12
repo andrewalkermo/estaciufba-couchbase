@@ -121,7 +121,8 @@ services:
       dockerfile: Dockerfile
     container_name: estaciufba
     networks:
-        - rede_couchbase
+      rede_couchbase:
+        ipv4_address: 172.11.238.150
     depends_on:
       db_principal:
         condition: service_healthy

@@ -1,5 +1,5 @@
 # EstaciUFBA
-Sistema de gerenciamento de estacionamento da UFBA. Projeto da disciplina de Laboratório de Banco de Dados.
+Sistema fictícios de gerenciamento de estacionamento da UFBA. Projeto da disciplina de Laboratório de Banco de Dados.
 Visando testar as funcionalidades do bacon de dados Couchbase.
 
 ## Pré-requisitos

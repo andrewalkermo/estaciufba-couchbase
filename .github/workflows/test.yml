@@ -8,4 +8,4 @@ jobs:
       - name: config env
         run: cp .env.example .env
       - name: test
-        run: docker-compose up estacifuba
+        run: docker-compose up estaciufba

@@ -31,12 +31,15 @@ class Database:
 
     def obter_vaga_livre(self, estacionamento_id: str):
         query = """
-            SELECT vagas.*
-            FROM vagas
-            WHERE estacionamento_id = $1 AND disponivel = true
-            LIMIT 1
-            """
-        return self.scope.query(query, QueryOptions(positional_parameters=[estacionamento_id]))
+                SELECT META().id, vagas.*
+                FROM vagas
+                WHERE estacionamento_id = 'estacionamento::1' AND disponivel = true
+                LIMIT 1
+                """
+        res = self.scope.query(query, QueryOptions(positional_parameters=[estacionamento_id])).execute()
+        vaga = res[0] if res else None
+        return vaga
+
     def ocupar_vaga_do_estacionamento(self, estacionamento_id: str, vaga_id: str):
         query = """
             UPDATE vagas

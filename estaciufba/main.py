@@ -1,4 +1,5 @@
 import threading
+import time
 
 import couchbase
 from couchbase.collection import ReplaceOptions
@@ -14,7 +15,7 @@ from db import  Database
 db = Database()
 
 def inserir_dados():
-    resultado = db.scope.collection("estacionamentos").upsert("estacionamento::1", {
+    db.scope.collection("estacionamentos").upsert("estacionamento::1", {
         "nome": "Estação 7 UFBA Portaria 1",
         "campus": "Ondina",
         "localizacao": {
@@ -22,7 +23,7 @@ def inserir_dados():
             "y": -38.507009500556485
         }
     })
-    resultado = db.scope.collection("vagas").upsert("vaga::1", {
+    db.scope.collection("vagas").upsert("vaga::1", {
         "estacionamento_id": "estacionamento::1",
         "disponivel": True,
         "status": "livre"
@@ -40,7 +41,7 @@ def inserir_dados():
         "saida": "2023-01-01 00:00:00"
     })
     db.scope.collection("vagas_acessos").upsert("vaga_acesso::2", {
-        "vaga_id": "vaga::2",
+        "vaga_id": "vaga::1",
         "entrada": "2023-01-01 00:00:00",
         "saida": "2023-01-01 00:00:00"
     })
@@ -49,6 +50,32 @@ def inserir_dados():
         "entrada": "2023-01-01 00:00:00",
         "saida": "2023-01-01 00:00:00"
     })
+    db.scope.collection("vagas_acessos").upsert("vaga_acesso::4", {
+        "vaga_id": "vaga::1",
+        "entrada": "2023-01-01 00:00:00",
+        "saida": "2023-01-01 00:00:00"
+    })
+    db.scope.collection("vagas_acessos").upsert("vaga_acesso::5", {
+        "vaga_id": "vaga::1",
+        "entrada": "2023-01-01 00:00:00",
+        "saida": "2023-01-01 00:00:00"
+    })
+    db.scope.collection("vagas_acessos").upsert("vaga_acesso::6", {
+        "vaga_id": "vaga::2",
+        "entrada": "2023-01-01 00:00:00",
+        "saida": "2023-01-01 00:00:00"
+    })
+    db.scope.collection("vagas_acessos").upsert("vaga_acesso::7", {
+        "vaga_id": "vaga::2",
+        "entrada": "2023-01-01 00:00:00",
+        "saida": "2023-01-01 00:00:00"
+    })
+    db.scope.collection("vagas_acessos").upsert("vaga_acesso::8", {
+        "vaga_id": "vaga::2",
+        "entrada": "2023-01-01 00:00:00",
+        "saida": "2023-01-01 00:00:00"
+    })
+
 
 def criar_indice():
     CollectionQueryIndexManager(
@@ -133,10 +160,28 @@ def reservar_vaga(vaga_id):
     vaga_disponivel["disponivel"] = False
 
     try:
+        print(f"Tentando reservar vaga {vaga_id}")
+
         db.scope.collection("vagas").replace(vaga_id, vaga_disponivel, ReplaceOptions(cas=res.cas))
     except (CASMismatchException, DocumentExistsException):
         raise Exception("Erro ao reservar vaga")
 
+    print(f"Vaga reservada {vaga_id}")
+
+
+def tentar_reservar_uma_vaga(estacionamento_id, tentativa=0):
+    try:
+        vaga = db.obter_vaga_livre(estacionamento_id)
+        if not vaga or not vaga['disponivel']:
+            raise Exception("Erro ao reservar vaga")
+
+        reservar_vaga(vaga['id'])
+    except Exception as e:
+        if tentativa < 3:
+            time.sleep(1)
+            tentar_reservar_uma_vaga(estacionamento_id, tentativa+1)
+        else:
+            raise Exception("Erro ao reservar vaga")
 
 def criar_usuario_ocupar_vagas():
     db.cluster.users().upsert_user(
@@ -153,18 +198,16 @@ def criar_usuario_ocupar_vagas():
         )
     )
 
-
-
 if __name__ == "__main__":
-    # inserir_dados()
-    # criar_indice()
-    # criar_views()
-    # criar_stored_procedures()
-    # criar_usuario_ocupar_vagas()
+    inserir_dados()
+    criar_indice()
+    criar_views()
+    criar_stored_procedures()
+    criar_usuario_ocupar_vagas()
 
     # run reservar_vaga in two threads
-    thread1 = threading.Thread(target=reservar_vaga, args=("vaga::1",))
-    thread2 = threading.Thread(target=reservar_vaga, args=("vaga::1",))
+    thread1 = threading.Thread(target=tentar_reservar_uma_vaga, args=("estacionamento::1",))
+    thread2 = threading.Thread(target=tentar_reservar_uma_vaga, args=("estacionamento::1",))
 
     thread1.start()
     thread2.start()

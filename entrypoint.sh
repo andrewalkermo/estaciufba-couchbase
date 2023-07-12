@@ -65,6 +65,9 @@ else
   curl -X POST -s -v -u $USERNAME:$PASSWORD http://$HOST:8091/pools/default/buckets/estaciufba/scopes/develop/collections -d name=vagas
   curl -X POST -s -v -u $USERNAME:$PASSWORD http://$HOST:8091/pools/default/buckets/estaciufba/scopes/develop/collections -d name=vagas_acessos
 
+  # Create a backup repository
+  cbbackupmgr config --archive /backups --repo estaciufba_${HOSTNAME}
+
   sleep 3
   # Create a remote cluster reference
   couchbase-cli xdcr-setup \
@@ -78,7 +81,7 @@ else
       --xdcr-password=$XDCR_PASSWORD
 
   # Create a outgoing replication
-  couchbase-cli xdcr-replicate \
+    couchbase-cli xdcr-replicate \
       --cluster=$HOST \
       --username=$USERNAME \
       --password=$PASSWORD \
@@ -86,6 +89,7 @@ else
       --xdcr-cluster-name=$XDCR_NAME \
       --xdcr-from-bucket=estaciufba \
       --xdcr-to-bucket=estaciufba
+
 fi
 
 numbered_echo "Attaching to couchbase-server entrypoint"

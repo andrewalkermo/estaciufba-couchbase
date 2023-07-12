@@ -33,7 +33,10 @@ Funcionalidades testadas:
 - Transações.
 - Controle de concorrência.
 
-
+## Estrutura banco de dados
+- Dois clusters diferentes para testar o XDCR.
+- Cada cluster tem dois nós para testar a replicação.
+Verificar o arquivos `entrypoint.sh` e `docker-compose.yml` para mais detalhes.
 
 
 

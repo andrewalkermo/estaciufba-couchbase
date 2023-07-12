@@ -2,7 +2,7 @@ import threading
 import time
 
 import couchbase
-from couchbase.collection import ReplaceOptions
+from couchbase.options import ReplaceOptions
 from couchbase.exceptions import CASMismatchException, DocumentExistsException
 from couchbase.management.logic.users_logic import Role, User
 from couchbase.management.logic.view_index_logic import DesignDocument, DesignDocumentNamespace, View
